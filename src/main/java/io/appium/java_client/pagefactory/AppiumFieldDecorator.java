@@ -151,14 +151,30 @@ public class AppiumFieldDecorator implements FieldDecorator {
     @Nullable
     private Object decorateWidget(Field field) {
         Class<?> type = field.getType();
+
         if (!Widget.class.isAssignableFrom(type) && !List.class.isAssignableFrom(type)) {
             return null;
         }
 
-        Class<? extends Widget> widgetType;
-        boolean isAlist = false;
+        Class<? extends Widget> widgetType = getWidgetType(field, type);
+
+        if (widgetType == null) {
+            return null;
+        }
+
+        CacheableLocator locator = widgetLocatorFactory.createLocator(field);
+        Map<ContentType, Constructor<? extends Widget>> map = OverrideWidgetReader.read(widgetType, field, platform);
+
         if (List.class.isAssignableFrom(type)) {
-            isAlist = true;
+            return createWidgetListProxy(widgetType, locator, map);
+        }
+
+        return createWidgetProxy(widgetType, locator, map);
+    }
+
+    @Nullable
+    private Class<? extends Widget> getWidgetType(Field field, Class<?> type) {
+        if (List.class.isAssignableFrom(type)) {
             Type genericType = field.getGenericType();
             if (!(genericType instanceof ParameterizedType)) {
                 return null;
@@ -166,35 +182,30 @@ public class AppiumFieldDecorator implements FieldDecorator {
 
             Type listType = ((ParameterizedType) genericType).getActualTypeArguments()[0];
 
-            if (ParameterizedType.class.isAssignableFrom(listType.getClass())) {
-                listType = ((ParameterizedType) listType).getRawType();
-            }
-
             if (listType instanceof Class) {
-                if (!Widget.class.isAssignableFrom((Class<?>) listType)) {
+                Class<?> rawType = (Class<?>) listType;
+                if (!Widget.class.isAssignableFrom(rawType)) {
                     return null;
                 }
                 //noinspection unchecked
-                widgetType = (Class<? extends Widget>) listType;
-            } else {
-                return null;
+                return (Class<? extends Widget>) rawType;
             }
 
-        } else {
-            //noinspection unchecked
-            widgetType = (Class<? extends Widget>) field.getType();
+            return null;
         }
 
-        CacheableLocator locator = widgetLocatorFactory.createLocator(field);
-        Map<ContentType, Constructor<? extends Widget>> map = OverrideWidgetReader.read(widgetType, field, platform);
+        //noinspection unchecked
+        return (Class<? extends Widget>) field.getType();
+    }
 
-        if (isAlist) {
-            return getEnhancedProxy(
-                    ArrayList.class,
-                    new WidgetListInterceptor(locator, webDriver, map, widgetType, duration)
-            );
-        }
+    private Object createWidgetListProxy(Class<? extends Widget> widgetType, CacheableLocator locator, Map<ContentType, Constructor<? extends Widget>> map) {
+        return getEnhancedProxy(
+                ArrayList.class,
+                new WidgetListInterceptor(locator, webDriver, map, widgetType, duration)
+        );
+    }
 
+    private Object createWidgetProxy(Class<? extends Widget> widgetType, CacheableLocator locator, Map<ContentType, Constructor<? extends Widget>> map) {
         Constructor<? extends Widget> constructor = WidgetConstructorUtil.findConvenientConstructor(widgetType);
         return getEnhancedProxy(
                 widgetType,
@@ -203,6 +214,7 @@ public class AppiumFieldDecorator implements FieldDecorator {
                 new WidgetInterceptor(locator, webDriver, null, map, duration)
         );
     }
+
 
     private WebElement proxyForAnElement(ElementLocator locator) {
         ElementInterceptor elementInterceptor = new ElementInterceptor(locator, webDriver);

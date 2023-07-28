@@ -26,7 +26,7 @@ import static io.appium.java_client.internal.CapabilityHelpers.toSafeBoolean;
 
 public interface SupportsClearDeviceLogsOnStartOption<T extends BaseOptions<T>> extends
         Capabilities, CanSetCapability<T> {
-    String CLEAR_DEVICE_LOGS_ON_START_OPTION = "clearDeviceLogsOnStart";
+    String CLEAR_DEVICE_ON_START = "clearDeviceLogsOnStart";
 
     /**
      * Makes UiAutomator2 to delete all the existing logs in the
@@ -35,7 +35,7 @@ public interface SupportsClearDeviceLogsOnStartOption<T extends BaseOptions<T>> 
      * @return self instance for chaining.
      */
     default T clearDeviceLogsOnStart() {
-        return amend(CLEAR_DEVICE_LOGS_ON_START_OPTION, true);
+        return amend(CLEAR_DEVICE_ON_START, true);
     }
 
 
@@ -47,7 +47,7 @@ public interface SupportsClearDeviceLogsOnStartOption<T extends BaseOptions<T>> 
      * @return self instance for chaining.
      */
     default T setClearDeviceLogsOnStart(boolean value) {
-        return amend(CLEAR_DEVICE_LOGS_ON_START_OPTION, value);
+        return amend(CLEAR_DEVICE_ON_START, value);
     }
 
     /**
@@ -57,6 +57,6 @@ public interface SupportsClearDeviceLogsOnStartOption<T extends BaseOptions<T>> 
      * @return True or false.
      */
     default Optional<Boolean> doesClearDeviceLogsOnStart() {
-        return Optional.ofNullable(toSafeBoolean(getCapability(CLEAR_DEVICE_LOGS_ON_START_OPTION)));
+        return Optional.ofNullable(toSafeBoolean(getCapability(CLEAR_DEVICE_ON_START)));
     }
 }
